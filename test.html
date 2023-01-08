@@ -1,0 +1,753 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Document</title>
+    <script src="https://cdn.jsdelivr.net/npm/vue@2.7.14"></script>
+    <!-- 引入样式 -->
+    <link rel="stylesheet" href="https://unpkg.com/element-ui/lib/theme-chalk/index.css">
+    <!-- 引入组件库 -->
+    <script src="https://unpkg.com/element-ui/lib/index.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/echarts/5.4.1/echarts.min.js"></script>
+    <script src="http://code.jquery.com/jquery-2.1.1.min.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+        }
+
+        #app {
+            padding: 12px;
+        }
+
+        .report-herder {
+            display: flex;
+        }
+
+        .dashboard {
+            height: 266px;
+            padding: 40px 30px;
+            display: flex;
+            justify-content: space-around;
+            align-items: center;
+        }
+
+        .dashboard .time {
+            font-size: 25px;
+            font-weight: 400;
+            letter-spacing: -0.5px;
+            height: 100%;
+            display: flex;
+            align-items: center;
+        }
+
+        #piecharts {
+            display: flex;
+            align-items: center;
+            height: 140px;
+            width: 140px;
+        }
+
+        .pointer {
+            width: 12px;
+            height: 12px;
+            background-color: grey;
+            border-radius: 50%;
+
+        }
+
+        .pointer.red {
+            background-color: #f56c6c;
+        }
+
+        .pointer.green {
+            background-color: #67c23a;
+        }
+
+        .state .state-item {
+            display: flex;
+            align-items: center;
+            padding: 20px 30px;
+        }
+
+        .state .state-item:first-child {
+            border-bottom: 1px solid #dcdfe6;
+        }
+
+        .step {
+            padding: 0 20px;
+            position: relative;
+        }
+
+        .step .step-item {
+            padding: 20px 40px;
+            width: 300px;
+            display: flex;
+            align-items: center;
+            justify-content: space-around;
+        }
+
+        .step-item-text {
+            text-align: center;
+        }
+
+        .step-item-text div {
+            font-size: 30px;
+            font-weight: 700;
+        }
+
+        .step-item-text span {
+            font-size: 16px;
+            letter-spacing: -.2px;
+            color: #404040;
+        }
+
+
+        .step-item:first-child {
+            border-bottom: 1px solid #dcdfe6;
+        }
+
+        .step:before {
+            content: '';
+            position: absolute;
+            width: 1px;
+            background-color: #dcdfe6;
+            height: 100px;
+            left: 0;
+            top: 50%;
+            transform: translateY(-50%);
+        }
+
+        .step:after {
+            content: '';
+            position: absolute;
+            width: 1px;
+            background-color: #dcdfe6;
+            height: 100px;
+            right: 0;
+            top: 50%;
+            transform: translateY(-50%);
+        }
+
+        .num-box {
+            text-align: center;
+            margin: 0 20px;
+        }
+
+        .num-box .value {
+            font-size: 20px;
+            font-weight: 600;
+            letter-spacing: -.4px;
+            line-height: 28px;
+            vertical-align: middle;
+        }
+
+        .num-box .name {
+            font-size: 13px;
+            letter-spacing: 1px;
+            color: #bfbfbf;
+            line-height: 18px;
+        }
+
+        .num-box i {
+
+            font-size: 40px;
+        }
+
+        .my-collapse-content {
+            padding: 0 20px 20px;
+        }
+
+        /* /deep/.el-collapse-item__content{
+    padding-bottom: 0;
+  }
+  /deep/.el-collapse-item__wrap{
+    border-bottom: 0px solid #e6ebf5;
+  } */
+        .my-collapse-content .controls {
+            margin-bottom: 15px;
+        }
+
+        .my-collapse-content .controls i {
+            margin: 5px 5px 0;
+            color: #6d317c;
+            font-size: 20px;
+        }
+
+        .my-collapse-content .controls i:hover {
+            background-color: #f2f9ee;
+            cursor: pointer;
+            color: #67c23a;
+        }
+
+        .flex-row {
+            display: flex;
+            align-items: center;
+        }
+
+        .flex-row.between {
+            justify-content: space-between;
+        }
+
+        .col-index {
+            background-color: #eff0f0;
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            border: 1px solid #333;
+            margin-right: 15px;
+            line-height: 20px;
+            text-align: center;
+        }
+
+        .col-time {
+            text-align: left;
+            padding: 0 20px;
+            color: #7f7f7f;
+            background-color: #f9f9f9;
+            font-size: 12px;
+            font-weight: 400;
+            margin-top: 4px;
+            white-space: nowrap;
+            text-overflow: ellipsis;
+            overflow: hidden;
+            word-break: break-all;
+        }
+
+        .col-time div {
+            margin-right: 30px;
+        }
+
+        .col-tab-content {
+            padding: 0 20px;
+            min-height: 50px;
+            background-color: #f5f5f5;
+            overflow: auto;
+        }
+
+        .el-table .assert_success {
+            color: green;
+        }
+    </style>
+</head>
+
+<body>
+    <div id="app">
+        <div class="report-herder">
+            <div class="report-name" style="font-weight: bold;color: #009688">
+                {{ report_data.name }}
+            </div>
+            <div style="margin-left: 10px">
+                开始时间： {{ report_data.start_time }}
+            </div>
+            <div style="margin-left: 10px">结束时间： {{ report_data.end_time }}</div>
+        </div>
+        <div class="dashboard">
+            <div class="time">
+                耗时： {{ time_difference() }}
+            </div>
+            <div id="piecharts" class="pie-charts"></div>
+            <div class="state">
+                <div class="state-item">
+                    <div class="pointer green" style="margin-right: 20px;"></div>
+                    <div>{{ report_data.success_count }} 成功</div>
+                </div>
+                <div class="state-item">
+                    <div class="pointer red" style="margin-right: 20px;"></div>
+                    <div>{{ report_data.failure_count }} 失败</div>
+                </div>
+            </div>
+            <div class="step">
+                <div class="step-item flex-row between">
+                    <div class="step-item-text">
+                        <div>1</div>
+                        <span>场景</span>
+                    </div>
+                    <div class="pointer green"></div>
+                    <div class="step-item-text">
+                        <div>{{ report_data.success_count }}</div>
+                        <span>成功</span>
+                    </div>
+                    <div class="pointer red"></div>
+                    <div class="step-item-text">
+                        <div>{{ report_data.failure_count }}</div>
+                        <span>失败</span>
+                    </div>
+                </div>
+                <div class="step-item flex-row between">
+                    <div class="step-item-text">
+                        <div>{{ report_data.step_count }}</div>
+                        <span>步骤</span>
+                    </div>
+                    <div class="pointer green"></div>
+                    <div class="step-item-text">
+                        <div>{{ report_data.success_count }}</div>
+                        <span>成功</span>
+                    </div>
+                    <div class="pointer red"></div>
+                    <div class="step-item-text">
+                        <div>{{ report_data.failure_count }}</div>
+                        <span>失败</span>
+                    </div>
+                </div>
+            </div>
+            <div class="num-box">
+                <i style="color: #f56c6c;" class="el-icon-warning-outline"></i>
+                <div class="value">
+                    {{ formatFailureRate(report_data.failure_count / report_data.step_count) }}
+                </div>
+                <div class="name">
+                    失败
+                </div>
+            </div>
+
+            <div class="num-box">
+                <i class="el-icon-document-checked"></i>
+                <div class="value">
+                    {{ report_data.success_assertion }} / {{ report_data.step_count }}
+                </div>
+                <div class="name">
+                    成功断言
+                </div>
+            </div>
+        </div>
+        <div class="my-collapse">
+            <el-tabs v-model="activeName" style="margin-bottom: 0">
+                <el-tab-pane label="全部" name="1"></el-tab-pane>
+                <el-tab-pane name="2">
+                    <span slot="label" style="color:#99CC66;">成功</span>
+                </el-tab-pane>
+                <el-tab-pane name="3">
+                    <span slot="label" style="color:#f56c6c;">失败</span>
+                </el-tab-pane>
+            </el-tabs>
+            <div class="my-collapse-content">
+                <div v-if="activeName === '1'" class="controls">
+                    <el-tooltip class="item" effect="dark" content="批量展开步骤" placement="top">
+                        <i class="el-icon-circle-plus-outline " @click="expand"></i>
+                    </el-tooltip>
+                    <el-tooltip class="item" effect="dark" content="批量折叠步骤" placement="top">
+                        <i class=" el-icon-remove-outline " @click="close"></i>
+                    </el-tooltip>
+
+                </div>
+                <div v-if="activeName !== '4'">
+                    <el-collapse accordion>
+                        <el-collapse-item>
+                            <template slot="title">
+                                <div class="flex-row">
+                                    步骤名称 <i class="header-icon el-icon-info"></i>
+                                </div>
+                            </template>
+                            <div style="padding: 0 20px">
+                                <el-collapse v-if="currentExecutionArray.length" v-model="collapseActiveArr"
+                                    style="box-shadow: 0 2px 12px 0 rgb(0 0 0 / 10%);margin:10px;padding:5px 10px;">
+                                    <el-collapse-item v-for="(item,index) in currentExecutionArray" :key="index"
+                                        :name="index+1">
+                                        <template slot="title">
+                                            <div class="flex-row between" style="width: 100%">
+                                                <div class="flex-row">
+                                                    <div class="col-index">{{ index + 1 }}</div>
+                                                    {{ item.name }}
+                                                </div>
+                                                <div class="time" style="color:#ff4949"> {{
+                                                    getTimeInMilliseconds(item.start_time, item.create_datetime) }} ms
+                                                </div>
+                                                <el-tag :type="item.status ? 'success' : 'danger'">{{ item.status ? '成功'
+                                                    : '失败' }}</el-tag>
+                                            </div>
+                                        </template>
+                                        <div>
+                                            <div class="col-time flex-row">
+                                                <div><span style="color: #409eff">开始时间：</span>{{ item.start_time }}
+                                                </div>
+                                                <div><span style="color: #409eff"> 结束时间：</span>{{ item.create_datetime
+                                                    }}</div>
+
+                                            </div>
+                                            <el-tabs v-model="colTab" style="margin-bottom: 0">
+                                                <el-tab-pane label="日志" name="1">
+                                                    <div class="col-tab-content">
+                                                        {{ item.log_info }}
+                                                    </div>
+                                                </el-tab-pane>
+                                                <el-tab-pane label="断言" name="2">
+                                                    <el-table :data="item.assert_list" style="width: 100%">
+                                                        <el-table-column prop="name" label="断言名称" width="180" />
+                                                        <el-table-column prop="err_info" :show-overflow-tooltip="true"
+                                                            label="错误信息" />
+                                                        <el-table-column prop="status" label="是否成功" align="center">
+                                                            <template v-slot="scope">
+                                                                <el-tag effect="plain"
+                                                                    :type="scope.row.status ? 'success' : 'danger'">
+                                                                    {{ scope.row.status | valueFormat }}
+                                                                </el-tag>
+                                                            </template>
+                                                        </el-table-column>
+                                                        <el-table-column prop="screenshot" :show-overflow-tooltip="true"
+                                                            label="截图" />
+                                                    </el-table>
+                                                </el-tab-pane>
+                                                <el-tab-pane label="提取" name="3">
+                                                    <el-table :data="DataExtraction" style="width: 100%">
+                                                        <el-table-column prop="name" label="名称" width="180" />
+                                                        <el-table-column prop="err_info" label="错误信息" />
+                                                        <el-table-column prop="status" label="是否成功" align="center">
+                                                            <template v-slot="scope">
+                                                                <el-tag effect="plain"
+                                                                    :type="scope.row.status ? 'success' : 'danger'">
+                                                                    {{ scope.row.status | valueFormat }}
+                                                                </el-tag>
+                                                            </template>
+                                                        </el-table-column>
+                                                    </el-table>
+                                                </el-tab-pane>
+                                            </el-tabs>
+                                        </div>
+                                    </el-collapse-item>
+                                </el-collapse>
+                                <el-collapse v-else>
+                                    <div style="text-align: center;margin: 10px;">暂无数据</div>
+                                </el-collapse>
+                            </div>
+                        </el-collapse-item>
+                    </el-collapse>
+                </div>
+            </div>
+        </div>
+    </div>
+
+</body>
+<script>
+    var vm = new Vue({
+        el: '#app',
+        data() {
+            return {
+                // 主数据
+                report_data: {
+                    "id": 17,
+                    "scene_name": "茶色主流程",
+                    "edit": false,
+                    "original_name": "茶色主流程-测试报告-2023-01-05 11:13",
+                    "creator_name": "carlcc",
+                    "status_name": "Success",
+                    "trigger_name": "手动触发",
+                    "description": "",
+                    "modifier": "1",
+                    "update_datetime": "2023-01-05 11:13:38",
+                    "create_datetime": "2023-01-05 11:13:38",
+                    "name": "茶色主流程-测试报告-2023-01-05 11:13",
+                    "report_type": "独立",
+                    "trigger": 1,
+                    "status": 2,
+                    "start_time": "2023-01-05 11:13:08",
+                    "end_time": "2023-01-05 11:13:38",
+                    "step_count": 8,
+                    "success_count": 8,
+                    "failure_count": 0,
+                    "no_execute_count": 0,
+                    "success_assertion": 3,
+                    "share_link": "amqp://guest:**@127.0.0.1:5672",
+                    "creator": 1,
+                    "scene": 42
+                },
+                executionAssertion: [
+                    {
+                        "name": "茶色启动",
+                        "start_time": "2023-01-05 11:13:08",
+                        "status": 1,
+                        "log_info": "Device initialisation successful",
+                        "step__id": 190,
+                        "report__id": 17,
+                        "update_datetime": "2023-01-05 11:13:38",
+                        "create_datetime": "2023-01-05 11:13:19",
+                        "assert_list": [
+                            {
+                                "name": "元素断言",
+                                "status": true,
+                                "asser_info": "元素存在-断言类型: android_uiautomator, 断言值: new UiSelector().resourceId(\"com.example.app_android:id/navigation_bar_item_large_label_view\")",
+                                "err_info": "恭喜断言成功",
+                                "screenshot": "http://localhost:8098/sys-tools/app/auto/scenario",
+                                "step__id": 190,
+                                "report__id": 17,
+                                "update_datetime": "2023-01-05 11:13:38",
+                                "create_datetime": "2023-01-05 11:13:25"
+                            }
+                        ]
+                    },
+                    {
+                        "name": "进入我的页面",
+                        "start_time": "2023-01-05 11:13:25",
+                        "status": 1,
+                        "log_info": "success",
+                        "step__id": 191,
+                        "report__id": 17,
+                        "update_datetime": "2023-01-05 11:13:38",
+                        "create_datetime": "2023-01-05 11:13:25",
+                        "assert_list": [
+                            {
+                                "name": "元素断言",
+                                "status": true,
+                                "asser_info": "元素存在-断言类型: android_uiautomator, 断言值: new UiSelector().resourceId(\"com.example.app_android:id/tvMemberName\")",
+                                "err_info": "恭喜断言成功",
+                                "screenshot": "http://localhost:8098/sys-tools/app/auto/scenario",
+                                "step__id": 191,
+                                "report__id": 17,
+                                "update_datetime": "2023-01-05 11:13:38",
+                                "create_datetime": "2023-01-05 11:13:26"
+                            }
+                        ]
+                    },
+                    {
+                        "name": "点击导航",
+                        "start_time": "2023-01-05 11:13:26",
+                        "status": 1,
+                        "log_info": "success",
+                        "step__id": 192,
+                        "report__id": 17,
+                        "update_datetime": "2023-01-05 11:13:38",
+                        "create_datetime": "2023-01-05 11:13:26",
+                        "assert_list": [
+                            {
+                                "name": "元素断言",
+                                "status": true,
+                                "asser_info": "元素存在-断言类型: android_uiautomator, 断言值: new UiSelector().resourceId(\"com.example.app_android:id/design_menu_item_text\")",
+                                "err_info": "恭喜断言成功",
+                                "screenshot": "http://localhost:8098/sys-tools/app/auto/scenario",
+                                "step__id": 192,
+                                "report__id": 17,
+                                "update_datetime": "2023-01-05 11:13:38",
+                                "create_datetime": "2023-01-05 11:13:27"
+                            }
+                        ]
+                    },
+                    {
+                        "name": "点击登录密码",
+                        "start_time": "2023-01-05 11:13:27",
+                        "status": 1,
+                        "log_info": "success",
+                        "step__id": 193,
+                        "report__id": 17,
+                        "update_datetime": "2023-01-05 11:13:38",
+                        "create_datetime": "2023-01-05 11:13:27",
+                        "assert_list": [
+                            {
+                                "name": "元素断言",
+                                "status": false,
+                                "asser_info": "元素存在-断言类型: android_uiautomator, 断言值: new UiSelector().resourceId(\"com.example.app_android:id/commitBtn-1\")",
+                                "err_info": "断言失败, 未找到-new UiSelector().resourceId(\"com.example.app_android:id/commitBtn-1\")",
+                                "screenshot": "https://video.9et.uk/spark/点击登录密码-1672888412975078000.png",
+                                "step__id": 193,
+                                "report__id": 17,
+                                "update_datetime": "2023-01-05 11:13:38",
+                                "create_datetime": "2023-01-05 11:13:33"
+                            }
+                        ]
+                    },
+                    {
+                        "name": "输入旧密码",
+                        "start_time": "2023-01-05 11:13:33",
+                        "status": 1,
+                        "log_info": "success",
+                        "step__id": 194,
+                        "report__id": 17,
+                        "update_datetime": "2023-01-05 11:13:38",
+                        "create_datetime": "2023-01-05 11:13:34",
+                        "assert_list": []
+                    },
+                    {
+                        "name": "输入新密码",
+                        "start_time": "2023-01-05 11:13:34",
+                        "status": 1,
+                        "log_info": "success",
+                        "step__id": 195,
+                        "report__id": 17,
+                        "update_datetime": "2023-01-05 11:13:38",
+                        "create_datetime": "2023-01-05 11:13:36",
+                        "assert_list": []
+                    },
+                    {
+                        "name": "输入确认密码",
+                        "start_time": "2023-01-05 11:13:36",
+                        "status": 1,
+                        "log_info": "success",
+                        "step__id": 196,
+                        "report__id": 17,
+                        "update_datetime": "2023-01-05 11:13:38",
+                        "create_datetime": "2023-01-05 11:13:37",
+                        "assert_list": []
+                    },
+                    {
+                        "name": "点击提交",
+                        "start_time": "2023-01-05 11:13:37",
+                        "status": 1,
+                        "log_info": "success",
+                        "step__id": 197,
+                        "report__id": 17,
+                        "update_datetime": "2023-01-05 11:13:38",
+                        "create_datetime": "2023-01-05 11:13:38",
+                        "assert_list": []
+                    }
+                ],
+                
+                myChart: null,
+                collapseActiveArr: [],
+                currentExecutionArray: [],
+                activeName: '1',
+                colTab: '1',
+                DataExtraction: [],
+                successExecution: [],
+                failureExecution: []
+            }
+        },
+        mounted() {
+            // 测试请求 
+            // $.get("http://8.219.191.75:8000/api/scene/report/detail/17",function(data,status){
+            //     console.log("Data: " + data + "\nStatus: " + status);
+            // });
+            this.makePie()
+            this.comExecutionAssertion()
+        },
+        watch: {
+            activeName: {
+                handler(new_val) {
+                    switch (new_val) {
+                        case '1':
+                            this.currentExecutionArray = this.executionAssertion
+                            for(let i=0;i < this.currentExecutionArray.length;i++){
+                                this.collapseActiveArr.push(i + 1)
+                            }
+                            break
+                        case '2':
+                            this.currentExecutionArray = this.successExecution
+                            for(let i=0;i<this.currentExecutionArray.length;i++){
+                                this.collapseActiveArr.push(i + 1)
+                            }
+                            break
+                        case '3':
+                            this.currentExecutionArray = this.failureExecution
+                            for(let i=0;i<this.currentExecutionArray.length;i++){
+                                this.collapseActiveArr.push(i + 1)
+                            }
+                            break
+                    }
+                },
+                immediate: true
+            }
+        },
+        methods: {
+            time_difference() {
+                const startTime = new Date(this.report_data.start_time)
+                const endTime = new Date(this.report_data.end_time)
+                const timeDiff = endTime - startTime
+                const hours = Math.floor(timeDiff / (1000 * 60 * 60))
+                const minutes = Math.floor((timeDiff % (1000 * 60 * 60)) / (1000 * 60))
+                const seconds = Math.floor((timeDiff % (1000 * 60)) / 1000)
+                let timeDiffStr = ''
+                if (hours > 0) {
+                    timeDiffStr += `${hours}h`
+                }
+                if (minutes > 0) {
+                    timeDiffStr += `${minutes}min`
+                }
+                timeDiffStr += `${seconds}s`
+                return timeDiffStr
+            },
+            makePie() {
+                this.myChart = echarts.init(document.getElementById('piecharts'))
+                const option = {
+                    tooltip: {
+                        trigger: 'item'
+                    },
+                    title: {
+                        text: this.report_data.step_count,
+                        left: 'center',
+                        top: 'center',
+                        textStyle: {
+                            color: '#333',
+                            fontWeight: 'bold',
+                            fontSize: '14'
+                        },
+                        subtext: '执行指令',
+                        subtextStyle: {
+                            color: '#999',
+                            fontSize: '12'
+                        }
+                    },
+                    legend: {
+                        show: false
+                    },
+                    color: ['#f56c6c', '#67c23a', 'grey'],
+                    series: [
+                        {
+                            name: '',
+                            type: 'pie',
+                            radius: ['80%', '90%'],
+                            avoidLabelOverlap: false,
+                            label: {
+                                show: false,
+                                position: 'center'
+                            },
+                            hoverOffset: 2,
+                            emphasis: {
+                                itemStyle: {
+
+                                },
+                                label: {
+                                    show: false,
+                                    fontSize: '16',
+                                    fontWeight: 'bold'
+                                }
+                            },
+                            labelLine: {
+                                show: false
+                            },
+                            data: [
+                                { value: this.report_data.failure_count, name: '失败' },
+                                { value: this.report_data.success_count, name: '成功' },
+                                { value: this.report_data.no_execute_count, name: '未执行' }
+                            ]
+                        }
+                    ]
+                }
+                this.myChart.setOption(option)
+                // 随着屏幕大小调节图表
+                // window.addEventListener('resize', () => {
+                //   this.myChart.resize()
+                // })
+            },
+            formatFailureRate(failureRate) {
+                return failureRate === 0 ? 0 : (failureRate * 100).toFixed(2) + '%'
+            },
+            close() {
+                this.collapseActiveArr = []
+            },
+            expand() {
+                this.collapseActiveArr = []
+                this.currentExecutionArray.forEach((item, index) => {
+                    this.collapseActiveArr.push(index + 1)
+                })
+            },
+            getTimeInMilliseconds(start, end) {
+                const startTime = new Date(Date.parse(start))
+                const endTime = new Date(Date.parse(end))
+                return endTime.getTime() - startTime.getTime()
+            },
+            comExecutionAssertion(){
+                for(let i = 0;i<this.executionAssertion.length;i++){
+                if(this.executionAssertion[i].status == 1){
+                    this.successExecution.push(this.executionAssertion[i])
+                }else if(this.executionAssertion[i].status == 0){
+                    this.failureExecution.push(this.executionAssertion[i])
+                }
+            }
+            }
+        }
+    })
+
+</script>
+
+</html>
